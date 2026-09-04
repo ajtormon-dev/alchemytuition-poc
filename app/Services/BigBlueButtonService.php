@@ -13,8 +13,20 @@ class BigBlueButtonService
 
     public function __construct()
     {
-        $baseUrl = rtrim(config('bigbluebutton.server_url', 'https://test30.bigbluebutton.org/bigbluebutton/'), '/');
-        $this->serverUrl = $baseUrl . '/api/';
+        $rawUrl = config('bigbluebutton.server_url', '/mock-bbb/');
+        
+        if (!str_starts_with($rawUrl, 'http://') && !str_starts_with($rawUrl, 'https://')) {
+            $rawUrl = url($rawUrl);
+        }
+
+        $baseUrl = rtrim($rawUrl, '/');
+
+        if (str_ends_with($baseUrl, '/api')) {
+            $this->serverUrl = $baseUrl . '/';
+        } else {
+            $this->serverUrl = $baseUrl . '/api/';
+        }
+
         $this->salt = config('bigbluebutton.salt', '8cd803242780775d5065e8942b0c3924');
     }
 
