@@ -82,5 +82,6 @@ class MeetingTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('BigBlueButton Interactive Classroom');
         $response->assertSee('room-test');
+        $response->assertSee('Resources');
     }
 }
