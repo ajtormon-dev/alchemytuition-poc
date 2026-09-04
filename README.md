@@ -1,58 +1,35 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BigBlueButton (BBB) Laravel Integration POC
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This repository contains a Laravel proof-of-concept integrating BigBlueButton (BBB) classroom meetings.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. Creating the BBB Meeting
+`App\Services\BigBlueButtonService::createMeeting()` executes an HTTP `GET` request to the BigBlueButton `/api/create` endpoint, passing query parameters (`name`, `meetingID`, `attendeePW`, `moderatorPW`) signed with a SHA-1 checksum.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 2. Generating the Unique Meeting ID
+Unique meeting IDs are generated programmatically per session using `Str::uuid()` with a `room-` prefix (e.g. `room-550e8400-e29b-41d4-a716-446655440000`), ensuring distinct IDs for every room creation request.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 3. Laravel Authentication with BBB
+Authentication uses a shared secret (`salt`) configured via `config/bigbluebutton.php` / environment variables. For each request, Laravel computes a SHA-1 checksum:
+`sha1($apiAction . $queryString . $salt)`
+BBB calculates the checksum on its end using the same shared secret and rejects any requests where checksums do not match.
 
-## Learning Laravel
+### 4. How the Join Process Works
+1. User clicks **Join Meeting** on the landing page (`/`).
+2. `MeetingController@join` triggers `BigBlueButtonService@createMeeting` to call the `/api/create` endpoint.
+3. Upon receiving a successful XML response, `BigBlueButtonService@getModeratorJoinUrl` constructs a signed `/api/join` URL containing `fullName`, `meetingID`, `password` (moderatorPW), and `redirect=true`.
+4. Laravel redirects the user's browser directly to the generated BBB join URL.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 5. Adding the Resources Button
+In the local mock classroom UI (`resources/views/mock_bbb_room.blade.php`), a `📚 Resources` action button was added to the main control bar pointing to `#`. In production BigBlueButton (v2.6+ / 3.0+), custom UI buttons are added via the `@bigbluebutton/plugin-sdk` HTML5 client plugin framework.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 6. Difficulties & Limitations
+- **Local Development Environment**: A full BigBlueButton server requires a dedicated Ubuntu installation or complex container setup. A mock BBB API controller (`MockBigBlueButtonController`) was implemented to test full request flows locally without external dependencies.
+- **Client Extensibility**: BBB's HTML5 client is standalone; adding custom buttons in a real deployment requires building an HTML5 plugin rather than editing Laravel views.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 7. Production Implementation Recommendations
+- **Database Persistence**: Store meeting sessions, room UUIDs, passwords, and user role associations in Eloquent models and migrations.
+- **Official PHP SDK**: Integrate the official `bigbluebutton/bigbluebutton-api-php` package for full feature coverage (recording management, webhooks, room status).
+- **BBB HTML5 Plugin**: Package the Resources button into a plugin using `@bigbluebutton/plugin-sdk`.
+- **Role-Based Join Links**: Generates student (attendee) vs. tutor (moderator) join links dynamically based on Laravel user authentication and authorization rules.
