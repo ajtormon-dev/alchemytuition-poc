@@ -83,5 +83,7 @@ class MeetingTest extends TestCase
         $response->assertSee('BigBlueButton Interactive Classroom');
         $response->assertSee('room-test');
         $response->assertSee('Resources');
+        $response->assertSee('href="#"', false);
+        $response->assertSee('target="_blank"', false);
     }
 }

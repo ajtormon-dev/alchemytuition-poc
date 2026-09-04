@@ -161,7 +161,7 @@
                 <button class="btn-ctrl active">🎤 Mute Audio</button>
                 <button class="btn-ctrl active">📹 Share Webcam</button>
                 <button class="btn-ctrl">🖥️ Share Screen</button>
-                <a href="#" class="btn-ctrl" style="background-color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">📚 Resources</a>
+                <a href="#" target="_blank" class="btn-ctrl" style="background-color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">📚 Resources</a>
                 <a href="{{ route('meeting.index') }}" class="btn-ctrl" style="background-color: #dc2626; text-decoration: none;">Leave Meeting</a>
             </div>
         </section>
